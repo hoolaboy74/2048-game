@@ -1,6 +1,66 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Board from './components/Board';
 import './components/Game.css';
+
+// Helper Functions
+const toMatrix = grid => grid.reduce((acc, _, i) => {
+    if (i % 4) {
+        acc[acc.length - 1].push(grid[i]);
+    } else {
+        acc.push([grid[i]]);
+    }
+    return acc;
+}, []);
+const toGrid = matrix => matrix.flat();
+const getRandomEmptyCell = (currentBoard) => {
+    const emptyCells = currentBoard.map((val, i) => val === 0 ? i : -1).filter(i => i !== -1);
+    if (emptyCells.length === 0) return null;
+    return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+};
+const placeRandomTile = (currentBoard) => {
+    const newBoard = [...currentBoard];
+    const cellIndex = getRandomEmptyCell(newBoard);
+    let newValue = 0;
+    if (cellIndex !== null) {
+        newValue = Math.random() < 0.9 ? 2 : 4;
+        newBoard[cellIndex] = newValue;
+    }
+    return { board: newBoard, newValue, newIndex: cellIndex };
+};
+const slide = row => {
+    const arr = row.filter(val => val);
+    return arr.concat(Array(4 - arr.length).fill(0));
+};
+const combine = (row) => {
+    let scoreGained = 0;
+    let merges = [];
+    for (let i = 0; i < 3; i++) {
+        if (row[i] !== 0 && row[i] === row[i + 1]) {
+            const mergedValue = row[i] * 2;
+            merges.push(`${row[i]}와 ${row[i]}가 합쳐져 ${mergedValue}가 됨`);
+            row[i] = mergedValue;
+            scoreGained += mergedValue;
+            row[i + 1] = 0;
+        }
+    }
+    return { newRow: row, scoreGained, merges };
+};
+const operate = (row) => {
+    const slidedRow = slide(row);
+    const { newRow, scoreGained, merges } = combine(slidedRow);
+    return { finalRow: slide(newRow), scoreGained, merges };
+};
+const rotate = matrix => matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]).reverse());
+const isGameOver = (currentBoard) => {
+    for (let i = 0; i < 16; i++) {
+        if (currentBoard[i] === 0) return false;
+        const col = i % 4;
+        const row = Math.floor(i / 4);
+        if (col < 3 && currentBoard[i] === currentBoard[i + 1]) return false;
+        if (row < 3 && currentBoard[i] === currentBoard[i + 4]) return false;
+    }
+    return true;
+};
 
 const App = () => {
     // State and Ref
@@ -13,72 +73,23 @@ const App = () => {
     const alternatorRef = useRef(false);
 
     // Constants
-    const keyMap = {
+    const keyMap = useMemo(() => ({
         '1': 0, '2': 1, '3': 2, '4': 3,
         'q': 4, 'w': 5, 'e': 6, 'r': 7,
         'a': 8, 's': 9, 'd': 10, 'f': 11,
         'z': 12, 'x': 13, 'c': 14, 'v': 15,
-    };
-    const indexMap = Object.fromEntries(Object.entries(keyMap).map(([key, index]) => [index, key]));
+    }), []);
+    const indexMap = useMemo(() => (
+        Object.fromEntries(Object.entries(keyMap).map(([key, index]) => [index, key]))
+    ), [keyMap]);
 
-    // Helper Functions (remain the same)
-    const toMatrix = grid => grid.reduce((acc, _, i) => (i % 4 ? acc[acc.length - 1].push(grid[i]) : acc.push([grid[i]]), acc), []);
-    const toGrid = matrix => matrix.flat();
-    const getRandomEmptyCell = (currentBoard) => {
-        const emptyCells = currentBoard.map((val, i) => val === 0 ? i : -1).filter(i => i !== -1);
-        if (emptyCells.length === 0) return null;
-        return emptyCells[Math.floor(Math.random() * emptyCells.length)];
-    };
-    const placeRandomTile = (currentBoard) => {
-        const newBoard = [...currentBoard];
-        const cellIndex = getRandomEmptyCell(newBoard);
-        let newValue = 0;
-        if (cellIndex !== null) {
-            newValue = Math.random() < 0.9 ? 2 : 4;
-            newBoard[cellIndex] = newValue;
-        }
-        return { board: newBoard, newValue, newIndex: cellIndex };
-    };
-    const slide = row => {
-        const arr = row.filter(val => val);
-        return arr.concat(Array(4 - arr.length).fill(0));
-    };
-    const combine = (row) => {
-        let scoreGained = 0;
-        let merges = [];
-        for (let i = 0; i < 3; i++) {
-            if (row[i] !== 0 && row[i] === row[i + 1]) {
-                const mergedValue = row[i] * 2;
-                merges.push(`${row[i]}와 ${row[i]}가 합쳐져 ${mergedValue}가 됨`);
-                row[i] = mergedValue;
-                scoreGained += mergedValue;
-                row[i + 1] = 0;
-            }
-        }
-        return { newRow: row, scoreGained, merges };
-    };
-    const operate = (row) => {
-        const slidedRow = slide(row);
-        const { newRow, scoreGained, merges } = combine(slidedRow);
-        return { finalRow: slide(newRow), scoreGained, merges };
-    };
-    const rotate = matrix => matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]).reverse());
-    const isGameOver = (currentBoard) => {
-        for (let i = 0; i < 16; i++) {
-            if (currentBoard[i] === 0) return false;
-            const col = i % 4;
-            const row = Math.floor(i / 4);
-            if (col < 3 && currentBoard[i] === currentBoard[i + 1]) return false;
-            if (row < 3 && currentBoard[i] === currentBoard[i + 4]) return false;
-        }
-        return true;
-    };
-    const checkGameOver = (currentBoard) => {
+    // Helper Functions - moved outside App component
+    const checkGameOver = useCallback((currentBoard) => {
         if (isGameOver(currentBoard)) {
             setGameOver(true);
             setMessage("게임 종료! '다시 시작' 버튼을 눌러 새 게임을 시작하세요.");
         }
-    };
+    }, [setGameOver, setMessage]);
 
     // Main Logic
     const announceTile = useCallback((index) => {
@@ -140,7 +151,7 @@ const App = () => {
             }
             alternatorRef.current = !alternatorRef.current;
         }
-    }, [board, score, indexMap]);
+    }, [board, score, indexMap, checkGameOver]);
 
     const startGame = useCallback(() => {
         let { board: board1 } = placeRandomTile(Array(16).fill(0));
