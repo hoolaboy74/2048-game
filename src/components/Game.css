@@ -1,0 +1,19 @@
+.tile-super { background-color: #3c3a32; color: var(--tile-text-light); }
+
+.instructions {
+    margin-top: 40px;
+    max-width: 500px;
+    text-align: left;
+    background-color: var(--board-bg-color);
+    padding: 10px 20px;
+    border-radius: 5px;
+}
+
+.instructions h2 {
+    text-align: center;
+}
+
+.instructions ul {
+    padding-left: 20px;
+    line-height: 1.6;
+}

@@ -1,0 +1,36 @@
+:root {
+    --bg-color: #121212;
+    --text-color: #ffffff;
+    --board-bg-color: #333333;
+    --tile-bg-color: #444444;
+    --tile-color-2: #eee4da;
+    --tile-color-4: #ede0c8;
+    --tile-color-8: #f2b179;
+    --tile-color-16: #f59563;
+    --tile-color-32: #f67c5f;
+    --tile-color-64: #f65e3b;
+    --tile-color-128: #edcf72;
+    --tile-color-256: #edcc61;
+    --tile-color-512: #edc850;
+    --tile-color-1024: #edc53f;
+    --tile-color-2048: #edc22e;
+    --tile-color-super: #3c3a32;
+    --tile-text-light: #f9f6f2;
+    --tile-text-dark: #776e65;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+}
